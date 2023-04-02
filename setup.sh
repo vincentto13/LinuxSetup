@@ -90,7 +90,7 @@ change_shell_to_zsh() {
     local zsh=$(type -p zsh)
     echo ${zsh}
     if [ ! -z ${zsh} ]; then
-       chsh -s ${zsh}
+       sudo chsh -s ${zsh} ${CURRENT_USER}
     fi 
     return "0"
 }
@@ -102,6 +102,9 @@ install_oh_my_zsh() {
     git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
     return "0"
 }
+
+# Make sure there is a sudo session
+sudo echo "Starting... " || exit -1
 
 caller "Update package db" sudo apt update 
 caller "Upgrade packages" sudo apt upgrade -y
