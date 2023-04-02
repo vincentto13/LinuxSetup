@@ -2,7 +2,7 @@
 set -o pipefail
 
 CURRENT_USER=${USER}
-TOOLS="vim tmux iputils-ping net-tools git python3 python3-pip htop"
+TOOLS="vim tmux iputils-ping net-tools git python3 python3-pip htop zsh"
 REPO="https://github.com/vincentto13/LinuxSetup.git"
 TMP_REPO_PATH="/tmp/$(basename ${REPO})"
 
@@ -34,7 +34,7 @@ caller() {
         echo -e " ${red}fail${reset}"
         tail -10 ${HOME}/my_env_setup.log
     else
-        echo -e " ${green}\xE2\x9C\x94${reset}"
+        echo -e "\r  ${text}...  ${green}\xE2\x9C\x94${reset}"
     fi
 }
 
@@ -66,8 +66,19 @@ install_keys() {
 
 install_gitconfig() {
     if [ -f ${TMP_REPO_PATH}/config/.gitconfig ] && [ ! -f ${HOME}/.gitconfig ]; then
-        cp ${TMP_REPO_PATH}/config/.gitconfig ${HOME}/.gitconfig
+        cp ${TMP_REPO_PATH}/config/.gitconfig ${HOME}
     fi
+    return "0"
+}
+
+install_zsh_configs() {
+    if [ -f ${TMP_REPO_PATH}/config/.zshrc ] && [ ! -f ${HOME}/.zshrc ]; then
+        cp ${TMP_REPO_PATH}/config/.zshrc ${HOME}
+    fi
+    if [ -f ${TMP_REPO_PATH}/config/.p10k.zsh ] && [ ! -f ${HOME}/.p10k.zsh ]; then
+        cp ${TMP_REPO_PATH}/config/.p10k.zsh ${HOME}
+    fi
+    return "0"
 }
 
 cleanup_repo() {
@@ -75,13 +86,33 @@ cleanup_repo() {
     return "0"
 }
 
+change_shell_to_zsh() {
+    local zsh=$(type -p zsh)
+    echo ${zsh}
+    if [ ! -z ${zsh} ]; then
+       chsh -s ${zsh}
+    fi 
+    return "0"
+}
+
+install_oh_my_zsh() {
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --keep-zshrc --unattended
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+    return "0"
+}
+
 caller "Update package db" sudo apt update 
 caller "Upgrade packages" sudo apt upgrade -y
-caller "Install tools" sudo apt install ${TOOLS}
+caller "Install tools" sudo apt install -y ${TOOLS}
 caller "Setup python" sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 3
 
 caller "Install docker" install_docker
 caller "Clone repository" clone_repo
 caller "Install public keys" install_keys
 caller "Install .gitconfig" install_gitconfig
+caller "Install zsh configs" install_zsh_configs
 caller "Cleanup repository" cleanup_repo
+caller "Changing shell to zsh" change_shell_to_zsh
+caller "Install Oh-my-zsh" install_oh_my_zsh
